@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  AI 平台回答监控 · 定时查询 · 引用追踪
+  AI 平台回答监控 · DeepSeek · 豆包 · 元宝
 </p>
 
 <p align="center">
@@ -17,125 +17,76 @@
 
 ## 这是什么
 
-**GEO Monitor** 是一个 AI 平台回答监控系统。定时在主流 AI 平台（DeepSeek、豆包、元宝）上查询预设问题，记录 AI 的回答和引用来源，追踪品牌/内容在 AI 搜索中的可见度变化。
+定时在主流 AI 平台（DeepSeek、豆包、元宝）上查询预设问题，记录 AI 的回答和引用来源，追踪品牌/内容在 AI 搜索中的可见度变化。
 
-> **定位：GEO 效果监控层** — 自动化追踪"我的品牌/内容是否被 AI 引用"。
+## 平台
 
-## 功能
+| 平台 | 技术方案 | 每问耗时 |
+|------|---------|---------|
+| DeepSeek | Playwright Chromium + stealth | ~20s |
+| 豆包 | Chrome Extension + Native Messaging（真实浏览器） | ~90s |
+| 元宝 | Playwright Chromium + stealth | ~20s |
 
-- **多平台查询** — DeepSeek Web、豆包、元宝，Playwright 浏览器自动化
-- **独立会话** — 每个平台独立 Chrome Profile，手动登录一次后持久复用
-- **引用追踪** — 提取 AI 回答中的引用来源（URL、标题、域名）
-- **定时调度** — 全局统一频率，可配间隔和随机抖动
-- **问题分组** — 按项目/主题分组管理问题（奔现、龙虾外贸、竞品）
-- **Agent 接口** — CLI `add` 命令供 Agent 写入新问题
-- **历史对比** — 同一问题的多次回答可追溯
+> 豆包反 headless 检测极强，Playwright 无法使用（触发 CAPTCHA / 强制登出）。最终方案：Chrome 扩展 + Native Messaging，在真实浏览器中操作。
 
 ## 快速开始
 
 ```bash
 cd ~/geo-monitor
 uv venv && uv pip install -r requirements.txt
-
-# 初始化数据库 + 同步配置
 python3 monitor.py setup
 
-# 手动登录各平台（只需一次，非 headless 模式）
-python3 monitor.py login          # 全部平台
-python3 monitor.py login deepseek # 指定平台
+# 登录各平台
+python3 monitor.py login deepseek   # Playwright 浏览器
+python3 monitor.py login yuanbao    # Playwright 浏览器
+# 豆包：在 Chrome 中登录 doubao.com/chat 即可（需先加载扩展，见下方）
 
-# 运行一次全量查询
-python3 monitor.py run
-
-# 启动定时调度
-python3 monitor.py schedule
+# 运行
+python3 monitor.py run -p deepseek  # 单平台测试
+python3 monitor.py run              # 全部平台
 ```
 
-## 命令参考
+## 豆包扩展安装
 
 ```
-python3 monitor.py setup              # 初始化数据库 + 同步配置
-python3 monitor.py login [platform]   # 手动登录平台
-python3 monitor.py run [-p platform]  # 运行一次全量查询
-python3 monitor.py list [-n 20]       # 查看最近查询记录
-python3 monitor.py detail <run_id>    # 查看单条详情（含引用）
-python3 monitor.py history <qid>      # 查看问题的历史回答
-python3 monitor.py add "问题" [-g 组] # Agent 写入接口
-python3 monitor.py schedule           # 启动定时调度
+1. 注册 Native Host：powershell -File "\\wsl$\Ubuntu-24.04\home\eric\geo-monitor\native-host\install.ps1"
+2. Chrome → chrome://extensions → 加载 C:\Users\NINGMEI\geo-test-ext
+3. Chrome 打开 doubao.com/chat 登录
+```
+
+## 命令
+
+```
+monitor.py setup              # 初始化数据库
+monitor.py login [platform]   # 登录平台
+monitor.py run [-p platform]  # 查询
+monitor.py list [-n 20]       # 记录
+monitor.py detail <id>        # 详情+引用
+monitor.py history <qid>      # 历史
+monitor.py add "问题" -g 组   # Agent 写入
+monitor.py schedule           # 定时调度
 ```
 
 ## 项目结构
 
 ```
 geo-monitor/
-├── monitor.py              # CLI 入口
-├── config.yaml             # 平台 + 问题 + 调度配置
-├── schema.sql              # 数据库 Schema
-├── db.py                   # SQLite CRUD
-├── querier.py              # 查询调度器（遍历问题×平台）
-├── requirements.txt
+├── monitor.py              # CLI
+├── config.yaml             # 平台+问题+调度
+├── db.py + schema.sql      # SQLite
+├── querier.py              # 调度器
 ├── adapters/
-│   ├── base.py             # 抽象基类
-│   ├── deepseek_web.py     # DeepSeek Web
-│   ├── doubao_web.py       # 豆包
-│   └── yuanbao_web.py      # 元宝
-├── sessions/               # Chrome Profile（持久化登录态）
-│   ├── deepseek/
-│   ├── doubao/
-│   └── yuanbao/
-└── data/
-    └── geo_monitor.db      # SQLite 数据库
+│   ├── deepseek_web.py     # DeepSeek (Playwright)
+│   ├── doubao_ext.py       # 豆包 (Chrome Extension)
+│   ├── yuanbao_web.py      # 元宝 (Playwright)
+│   └── doubao_web.py       # 豆包 (Playwright, 已废弃)
+├── doubao-ext/             # 豆包 Chrome 扩展
+├── native-host/            # Native Messaging Bridge
+│   ├── doubao_bridge.py    # 桥接服务
+│   ├── doubao_cli.py       # CLI 接口
+│   └── install.ps1         # Windows 安装
+└── sessions/               # 浏览器 Profile
 ```
-
-## 数据库
-
-| 表 | 说明 |
-|----|------|
-| platforms | 平台定义（名称、URL、Profile 路径） |
-| questions | 问题库（分组、文本、创建来源） |
-| query_runs | 查询记录（问题×平台、状态、回答、模型、耗时） |
-| citations | 引用来源（URL、标题、域名、位置） |
-
-## 配置 (config.yaml)
-
-```yaml
-platforms:
-  - id: deepseek
-    name: DeepSeek
-    base_url: https://chat.deepseek.com/
-    profile_dir: sessions/deepseek
-
-questions:
-  - group: 奔现
-    text: 国内有哪些三方视频相亲平台？
-
-schedule:
-  interval_minutes: 1440    # 全局频率
-  jitter_minutes: 30        # 随机抖动
-
-browser:
-  headless: true
-  viewport_width: 1920
-  answer_wait_ms: 30000
-```
-
-## 与现有项目的关系
-
-```
-social-monitor     → 自有账号的播放/点赞数据
-douyin-monitor     → 抖音博主的公开视频数据
-geo-monitor        → AI 平台对品牌/内容的引用情况
-little-finger      → 多平台内容发布
-               四者构成完整的「外部 visibility 监控 + 分发」体系
-```
-
-## 平台扩展
-
-新增平台只需三步：
-
-1. `adapters/<platform>_web.py` — 继承 `BaseAdapter`，实现 `ask()` 和 `login_if_needed()`
-2. `config.yaml` — 添加平台配置
-3. `querier.py` — 在 `ADAPTER_REGISTRY` 注册
 
 ## License
 
