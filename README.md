@@ -21,13 +21,13 @@
 
 ## 平台
 
-| 平台 | 技术方案 | 每问耗时 |
-|------|---------|---------|
-| DeepSeek | Playwright Chromium + stealth | ~20s |
-| 豆包 | Chrome Extension + Native Messaging（真实浏览器） | ~90s |
-| 元宝 | Playwright Chromium + stealth | ~20s |
+| 平台 | 技术方案 | 每问耗时 | macOS |
+|------|---------|---------|-------|
+| DeepSeek | Playwright Chromium + stealth | ~20s | ✅ 开箱即用 |
+| 豆包 | Chrome Extension + Native Messaging | ~90s | ✅ 需安装扩展（[见下方](#macos-适配)） |
+| 元宝 | Playwright Chromium + stealth | ~20s | ✅ 开箱即用 |
 
-> 豆包反 headless 检测极强，Playwright 无法使用（触发 CAPTCHA / 强制登出）。最终方案：Chrome 扩展 + Native Messaging，在真实浏览器中操作。
+> 豆包反 headless 检测极强，Playwright 无法使用。最终方案：Chrome 扩展 + Native Messaging，在真实浏览器中操作。
 
 ## 快速开始
 
@@ -48,11 +48,21 @@ python3 monitor.py run              # 全部平台
 
 ## 豆包扩展安装
 
+### Windows/WSL
+
+```powershell
+powershell -File "\\wsl$\Ubuntu-24.04\home\eric\geo-monitor\native-host\install.ps1"
 ```
-1. 注册 Native Host：powershell -File "\\wsl$\Ubuntu-24.04\home\eric\geo-monitor\native-host\install.ps1"
-2. Chrome → chrome://extensions → 加载 C:\Users\NINGMEI\geo-test-ext
-3. Chrome 打开 doubao.com/chat 登录
+Chrome → `chrome://extensions` → 加载 `C:\Users\NINGMEI\geo-test-ext`
+
+### macOS
+
+```bash
+bash native-host/install-macos.sh [extension_id]
 ```
+Chrome → `chrome://extensions` → 加载 `doubao-ext/`
+
+> 扩展 ID 每次加载解压扩展时会变化，需更新 manifest。Service Worker console 应显示 `Native host connected`。
 
 ## 命令
 
@@ -84,9 +94,30 @@ geo-monitor/
 ├── native-host/            # Native Messaging Bridge
 │   ├── doubao_bridge.py    # 桥接服务
 │   ├── doubao_cli.py       # CLI 接口
-│   └── install.ps1         # Windows 安装
+│   ├── install.ps1         # Windows 安装
+│   └── install-macos.sh    # macOS 安装
 └── sessions/               # 浏览器 Profile
-```
+
+## macOS 适配
+
+DeepSeek 和元宝（Playwright）开箱即用。豆包需要手动适配：
+
+### 与 Windows/WSL 的差异
+
+| 项 | Windows/WSL | macOS |
+|----|------------|-------|
+| Python 调用 | `wsl.exe -d ... -- python3` | 直接 `python3` |
+| Native Host 注册 | Registry (`HKCU\...`) | plist 文件 (`~/Library/.../NativeMessagingHosts/`) |
+| Native Host 脚本 | `.bat` | `.sh`（需 `chmod +x`） |
+| Playwright 浏览器 | 内置 Chromium | 内置 Chromium 或 `channel: "chrome"` |
+
+### 注意事项
+
+1. **首次运行**：`playwright install chromium`
+2. **权限**：`.sh` 脚本需要 `chmod +x`，可能弹 Gatekeeper
+3. **扩展 ID 变化**：每次加载解压扩展，ID 随机变。需重新跑 `install-macos.sh <新ID>`
+4. **Chrome 完全退出**：Cmd+Q，不是关窗口。改 Native Host 后必须重启 Chrome
+5. **会话不能跨机器复制**：`sessions/` 下的 Chrome Profile 加密绑定本机
 
 ## License
 
