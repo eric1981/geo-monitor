@@ -1,0 +1,16 @@
+{
+  "name": "Geo Monitor - Doubao Bridge",
+  "version": "1.0",
+  "manifest_version": 3,
+  "description": "Native messaging bridge for geo-monitor's Doubao queries",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["nativeMessaging", "tabs", "scripting"],
+  "host_permissions": ["https://www.doubao.com/*"],
+  "content_scripts": [{
+    "matches": ["https://www.doubao.com/chat*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
+}

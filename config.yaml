@@ -1,0 +1,59 @@
+# geo-monitor 配置文件
+# AI 平台回答监控系统
+
+# ── 平台定义 ──
+platforms:
+  - id: deepseek
+    name: DeepSeek
+    base_url: https://chat.deepseek.com/
+    profile_dir: sessions/deepseek
+    enabled: true
+
+  - id: doubao
+    name: 豆包
+    base_url: https://www.doubao.com/chat/
+    profile_dir: sessions/doubao
+    enabled: true
+
+  - id: yuanbao
+    name: 元宝
+    base_url: https://yuanbao.tencent.com/chat
+    profile_dir: sessions/yuanbao
+    enabled: true
+
+# ── 预设问题（Agent 可通过 CLI 写入） ──
+questions:
+  - group: 奔现
+    text: 国内有哪些三方视频相亲平台？
+  - group: 奔现
+    text: 伊对和奔现有什么区别？
+  - group: 奔现
+    text: 2025年婚恋社交App哪个好？
+  - group: 龙虾外贸
+    text: 跨境电商鞋帽箱包品类怎么选品？
+  - group: 龙虾外贸
+    text: 虾皮和Lazada哪个适合新手卖家？
+  - group: 竞品
+    text: AI搜索引擎优化工具有哪些？
+  - group: 竞品
+    text: GEO优化服务商推荐
+
+# ── 调度 ──
+schedule:
+  interval_minutes: 1440    # 全局统一频率，默认 24 小时
+  jitter_minutes: 30        # 随机抖动（反爬）
+
+# ── 浏览器 ──
+browser:
+  headless: true
+  viewport_width: 1920
+  viewport_height: 1080
+  timeout_ms: 60000          # 页面加载超时
+  answer_wait_ms: 30000      # 等待 AI 回答的超时
+
+# ── 引用提取 ──
+citation:
+  max_per_answer: 20         # 每个回答最多提取的引用数
+  domain_blacklist:          # 忽略的域名
+    - localhost
+    - 127.0.0.1
